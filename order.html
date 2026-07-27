@@ -524,7 +524,7 @@
 
     // ---------- Apps Script connection ----------
     // TODO: להחליף בכתובת ה-Web App האמיתית אחרי ה-Deploy (Code.gs)
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYu32n76DlOk5qu4CO-aJBlDikwNCf5QcW6aQ2Fn0mWVq0CYL8mULC4yThGARI5ZL1/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby79Qn4B8GpDqhXsL5e2fxCcngzzRyVfG-sKzPnMvsDinjpNs5KyCcMtZVf4mcFoYJ9/exec";
     const QUEUE_KEY = "yasou_order_queue";
 
     function loadQueue() {
@@ -550,17 +550,13 @@
       return "ord_" + table + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
     }
 
-    // שליחה לשרת - fetch עם no-cors כי Apps Script Web App לא מחזיר CORS headers,
-    // כך שאי אפשר לקרוא את התשובה, אבל אם ה-fetch לא זרק שגיאה - ההזמנה כנראה יצאה בהצלחה.
-    // ה-idempotency (orderId) בצד ה-Apps Script מגן מפני כפילויות אם בכל זאת ננסה לשלוח שוב.
+    // שליחה לשרת - GET (לא POST!) כי בקשות POST ל-Apps Script Web App עוברות הפניה (302)
+    // שהדפדפן ממיר אוטומטית ל-GET, ומאבד את גוף הבקשה - כך שהנתונים פשוט נעלמים בשקט.
+    // GET לא סובל מהבעיה הזו כי הוא נשאר GET גם אחרי ההפניה.
     async function trySendOne(order) {
       try {
-        await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify(order)
-        });
+        const url = APPS_SCRIPT_URL + "?action=submit&data=" + encodeURIComponent(JSON.stringify(order));
+        await fetch(url, { method: "GET", mode: "no-cors" });
         return true;
       } catch (err) {
         return false; // אין רשת / השרת לא זמין
