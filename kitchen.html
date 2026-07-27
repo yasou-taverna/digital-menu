@@ -1,1 +1,198 @@
 
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הזמנות נכנסות – YASOU</title>
+<style>
+  :root{
+    --navy: #163a5c;
+    --navy-dark: #0d2438;
+    --accent: #2f74ab;
+    --cream: #eef2f6;
+    --paper: #ffffff;
+    --ink: #17324f;
+    --muted: #5b6b7a;
+    --line: #d7e2ec;
+    --new: #c0473a;
+    --done: #3a8f5c;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Segoe UI", Arial, sans-serif;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    background: linear-gradient(180deg, #4f8fc4 0%, var(--navy-dark) 100%);
+    color: #fff;
+    padding: 16px; text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  }
+  .topbar h1 { margin: 0; font-size: 19px; }
+  .topbar .sub { font-size: 13px; color: #cfd9e3; margin-top: 3px; }
+  .status-line {
+    display: flex; justify-content: center; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+    padding: 8px;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--done); }
+  .status-dot.stale { background: var(--new); }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+    padding: 14px 16px 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .order-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .order-card.status-new { border-color: var(--new); box-shadow: 0 0 0 2px rgba(192,71,58,.25); }
+  .order-head {
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .order-card.status-new .order-head { background: var(--new); }
+  .order-head .table-num { font-size: 18px; font-weight: 800; }
+  .order-head .time { font-size: 12px; opacity: .9; }
+  .order-body { padding: 12px 14px; }
+  .order-items { white-space: pre-line; font-size: 14px; line-height: 1.6; margin: 0 0 10px; }
+  .order-total {
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 800; font-size: 15px; color: var(--navy);
+    border-top: 1px solid var(--line); padding-top: 8px;
+  }
+  .mark-done-btn {
+    margin-top: 10px; width: 100%;
+    background: var(--done); color: #fff; border: none;
+    border-radius: 8px; padding: 10px; font-weight: 700; font-size: 14px;
+    cursor: pointer;
+  }
+  .order-card.status-done { opacity: .55; }
+  .order-card.status-done .order-head { background: var(--muted); }
+
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center; color: var(--muted);
+    padding: 80px 20px; font-size: 15px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <h1>הזמנות נכנסות – קופה</h1>
+    <div class="sub">מתעדכן אוטומטית כל 10 שניות</div>
+  </div>
+  <div class="status-line">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">מתחבר...</span>
+  </div>
+
+  <div class="board" id="board">
+    <div class="empty-state">טוען הזמנות...</div>
+  </div>
+
+  <script src="js/api.js"></script>
+<script>
+  // סטטוסים שסומנו כ"בוצע" נשמרים מקומית בדפדפן הזה בלבד (ל-MVP; שלב מאוחר יותר: לכתוב סטטוס בחזרה לגיליון)
+  const DONE_KEY = "yasou_kitchen_done_ids";
+  function getDoneIds() {
+    try { return new Set(JSON.parse(localStorage.getItem(DONE_KEY)) || []); }
+    catch (e) { return new Set(); }
+  }
+  function markDone(orderId) {
+    const done = getDoneIds();
+    done.add(orderId);
+    localStorage.setItem(DONE_KEY, JSON.stringify([...done]));
+    render(lastOrders);
+  }
+
+  let lastOrders = [];
+
+  async function fetchOrders() {
+    try {
+      lastOrders = await apiFetchOrders();
+      render(lastOrders);
+      setStatus(true);
+    } catch (err) {
+      setStatus(false, err.message);
+    }
+  }
+
+  function setStatus(ok, errMsg) {
+    const dot = document.getElementById("statusDot");
+    const text = document.getElementById("statusText");
+    if (ok) {
+      dot.classList.remove("stale");
+      text.textContent = "מחובר · עודכן " + new Date().toLocaleTimeString("he-IL");
+    } else {
+      dot.classList.add("stale");
+      text.textContent = "בעיית חיבור - " + (errMsg || "מנסה שוב...");
+    }
+  }
+
+  function render(orders) {
+    const board = document.getElementById("board");
+    if (!orders || orders.length === 0) {
+      board.innerHTML = `<div class="empty-state">אין הזמנות כרגע</div>`;
+      return;
+    }
+    const doneIds = getDoneIds();
+
+    // הזמנות חדשות (לא סומנו כבוצעו) קודם, מהחדש לישן; אחריהן ההזמנות שסומנו כבוצעו
+    const sorted = [...orders].sort((a, b) => {
+      const aDone = doneIds.has(a["מזהה הזמנה (orderId)"]) ? 1 : 0;
+      const bDone = doneIds.has(b["מזהה הזמנה (orderId)"]) ? 1 : 0;
+      if (aDone !== bDone) return aDone - bDone;
+      return new Date(b["שעת שליחה"]) - new Date(a["שעת שליחה"]);
+    });
+
+    board.innerHTML = sorted.map(o => {
+      const orderId = o["מזהה הזמנה (orderId)"];
+      const isDone = doneIds.has(orderId);
+      const time = o["שעת שליחה"] ? new Date(o["שעת שליחה"]).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "";
+      return `
+        <div class="order-card ${isDone ? "status-done" : "status-new"}">
+          <div class="order-head">
+            <span class="table-num">שולחן ${o["שולחן"]}</span>
+            <span class="time">${time}</span>
+          </div>
+          <div class="order-body">
+            <div class="order-items">${escapeHtml(o["פריטים (טקסט)"] || "")}</div>
+            <div class="order-total">
+              <span>סה"כ</span>
+              <span>${o["סה\"כ (€)"]}€</span>
+            </div>
+            ${isDone ? "" : `<button class="mark-done-btn" onclick="markDone('${orderId}')">✓ סמן כבוצע</button>`}
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  fetchOrders();
+  setInterval(fetchOrders, 10000);
+</script>
+
+</body>
+</html>
+
