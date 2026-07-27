@@ -1,1 +1,171 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>מפת שולחנות – YASOU</title>
+<style>
+  :root{
+    --navy: #1b3654;
+    --navy-dark: #122540;
+    --gold: #c8a13a;
+    --gold-light: #e4c977;
+    --cream: #f6f2e9;
+    --paper: #ffffff;
+    --ink: #22303f;
+    --muted: #6b7787;
+    --line: #e3ddcd;
+    --zone-outdoor: #e7f0e2;
+    --zone-covered: #e2ecf5;
+    --zone-indoor: #f8ecd6;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Segoe UI", Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .topbar {
+    background: var(--navy); color: #fff;
+    padding: 16px; text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  }
+  .topbar h1 { margin: 0; font-size: 19px; }
+  .topbar .sub { font-size: 13px; color: #cfd9e3; margin-top: 3px; }
 
+  .zone {
+    padding: 22px 16px 26px;
+    border-bottom: 1px solid var(--line);
+  }
+  .zone.outdoor { background: var(--zone-outdoor); }
+  .zone.covered { background: var(--zone-covered); }
+  .zone.indoor  { background: var(--zone-indoor); }
+
+  .zone h2 {
+    text-align: center;
+    font-size: 20px; margin: 0 0 18px;
+    color: var(--navy);
+  }
+
+  .zone-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .table-btn {
+    position: relative;
+    background: #4f89c7;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15);
+    transition: transform .08s ease;
+  }
+  .table-btn:active { transform: scale(.94); }
+  .table-btn .cap-badge {
+    position: absolute;
+    top: -8px; right: -8px;
+    background: #fff; color: var(--navy);
+    border: 2px solid #4f89c7;
+    border-radius: 50%;
+    width: 24px; height: 24px;
+    font-size: 12px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* seat-based sizing */
+  .cap-2 { width: 60px; height: 46px; }
+  .cap-4 { width: 78px; height: 46px; }
+  .cap-6 { width: 96px; height: 46px; }
+  .cap-6.wide  { width: 120px; }
+  .cap-8 { width: 130px; height: 46px; }
+  .cap-10 { width: 90px; height: 90px; border-radius: 50%; }
+  .cap-12 { width: 150px; height: 46px; }
+
+  .legend {
+    text-align: center; padding: 14px 16px 30px;
+    font-size: 13px; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <h1>מפת שולחנות – YASOU</h1>
+    <div class="sub">בחר שולחן כדי לפתוח הזמנה חדשה</div>
+  </div>
+
+  <div class="zone outdoor">
+    <h2>מתחם חיצוני</h2>
+    <div class="zone-grid" id="zone-outdoor"></div>
+  </div>
+
+  <div class="zone covered">
+    <h2>מתחם מקורה</h2>
+    <div class="zone-grid" id="zone-covered"></div>
+  </div>
+
+  <div class="zone indoor">
+    <h2>מתחם פנימי</h2>
+    <div class="zone-grid" id="zone-indoor"></div>
+  </div>
+
+  <div class="legend">לחיצה על שולחן פותחת את מסך ההזמנה עבורו</div>
+
+<script>
+  // מבנה השולחנות - 34 שולחנות ב-3 אזורים, לפי מפת המסעדה בפועל
+  const TABLES = {
+    outdoor: [
+      { n: 25, cap: 6 }, { n: 26, cap: 6 }, { n: 29, cap: 6 }, { n: 31, cap: 6 }, { n: 32, cap: 6 },
+      { n: 27, cap: 6 }, { n: 28, cap: 6 }, { n: 30, cap: 6 }, { n: 33, cap: 6 }, { n: 34, cap: 6 }
+    ],
+    covered: [
+      { n: 21, cap: 8 }, { n: 22, cap: 12 }, { n: 23, cap: 12 }, { n: 24, cap: 8 },
+      { n: 18, cap: 6 }, { n: 19, cap: 10 }, { n: 20, cap: 6 }
+    ],
+    indoor: [
+      { n: 4, cap: 4 }, { n: 3, cap: 4 }, { n: 2, cap: 4 }, { n: 1, cap: 4 },
+      { n: 7, cap: 6 }, { n: 6, cap: 4 }, { n: 5, cap: 4 },
+      { n: 10, cap: 4 }, { n: 9, cap: 4 }, { n: 8, cap: 2 },
+      { n: 14, cap: 4 }, { n: 13, cap: 4 }, { n: 12, cap: 4 }, { n: 11, cap: 4 },
+      { n: 17, cap: 2 }, { n: 16, cap: 2 }, { n: 15, cap: 2 }
+    ]
+  };
+
+  function capClass(cap) {
+    if (cap === 10) return "cap-10";
+    if (cap === 12) return "cap-12";
+    if (cap === 8) return "cap-8";
+    if (cap === 6) return "cap-6";
+    if (cap === 4) return "cap-4";
+    return "cap-2";
+  }
+
+  function renderZone(zoneKey, containerId) {
+    const container = document.getElementById(containerId);
+    TABLES[zoneKey].forEach(t => {
+      const btn = document.createElement("button");
+      btn.className = "table-btn " + capClass(t.cap);
+      btn.innerHTML = t.n + `<span class="cap-badge">${t.cap}</span>`;
+      btn.onclick = () => {
+        location.href = "order.html?table=" + t.n;
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  renderZone("outdoor", "zone-outdoor");
+  renderZone("covered", "zone-covered");
+  renderZone("indoor", "zone-indoor");
+</script>
+
+</body>
+</html>
