@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -11,6 +12,7 @@
     --gold: #2f74ab;
     --gold-light: #5a9bcf;
     --cream: #eef2f6;
+    --danger: #c0473a;
     --paper: #ffffff;
     --ink: #22303f;
     --muted: #6b7787;
@@ -38,7 +40,7 @@
   .topbar .sub { font-size: 13px; color: #cfd9e3; margin-top: 3px; }
 
   .zone {
-    padding: 22px 16px 26px;
+    padding: 22px 50px 26px;
     border-bottom: 1px solid var(--line);
   }
   .zone.outdoor { background: var(--zone-outdoor); }
@@ -51,45 +53,45 @@
     color: var(--navy);
   }
 
-  .zone-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 14px;
-  }
-
-  .table-btn {
+  .zone-canvas {
     position: relative;
-    background: #4f89c7;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-weight: 800;
-    font-size: 18px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .table-btn {
+    --status: #2f74ab;
+    position: absolute;
+    width: calc(var(--w) * 1px);
+    height: calc(var(--h) * 1px);
+    transform: translate(-50%, -50%);
+    border: 3px solid #0d3a57;
+    background: color-mix(in srgb, var(--status), white 58%);
+    border-radius: 7px;
+    color: #151515;
+    font-weight: 900;
+    font-size: 1.35rem;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,.15);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.55), 0 8px 18px rgba(0,0,0,.11);
     transition: transform .08s ease;
   }
-  .table-btn:active { transform: scale(.94); }
-  .table-btn .cap-badge {
+  .table-btn.round { border-radius: 50%; }
+  .table-btn:active { transform: translate(-50%, -50%) scale(.94); }
+  .table-btn::before {
+    content: attr(data-number);
     position: absolute;
-    top: -8px; right: -8px;
-    background: #fff; color: var(--navy);
-    border: 2px solid #4f89c7;
+    top: 50%;
+    right: calc(100% + 10px);
+    transform: translateY(-50%);
+    width: 28px; height: 28px;
     border-radius: 50%;
-    width: 24px; height: 24px;
-    font-size: 12px; font-weight: 800;
+    background: #f8fbff;
+    border: 2px solid #24475a;
+    color: #e10f1c;
     display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 900;
   }
-  /* seat-based sizing */
-  .cap-2 { width: 60px; height: 46px; }
-  .cap-4 { width: 78px; height: 46px; }
-  .cap-6 { width: 96px; height: 46px; }
-  .cap-6.wide  { width: 120px; }
-  .cap-8 { width: 130px; height: 46px; }
-  .cap-10 { width: 90px; height: 90px; border-radius: 50%; }
-  .cap-12 { width: 150px; height: 46px; }
 
   .legend {
     text-align: center; padding: 14px 16px 30px;
@@ -106,66 +108,80 @@
 
   <div class="zone outdoor">
     <h2>מתחם חיצוני</h2>
-    <div class="zone-grid" id="zone-outdoor"></div>
+    <div class="zone-canvas" id="zone-outdoor" style="height:260px;"></div>
   </div>
 
   <div class="zone covered">
     <h2>מתחם מקורה</h2>
-    <div class="zone-grid" id="zone-covered"></div>
+    <div class="zone-canvas" id="zone-covered" style="height:380px;"></div>
   </div>
 
   <div class="zone indoor">
     <h2>מתחם פנימי</h2>
-    <div class="zone-grid" id="zone-indoor"></div>
+    <div class="zone-canvas" id="zone-indoor" style="height:340px;"></div>
   </div>
 
   <div class="legend">לחיצה על שולחן פותחת את מסך ההזמנה עבורו</div>
 
 <script>
-  // מבנה השולחנות - 34 שולחנות ב-3 אזורים, לפי מפת המסעדה בפועל
-  const TABLES = {
-    outdoor: [
-      { n: 25, cap: 6 }, { n: 26, cap: 6 }, { n: 29, cap: 6 }, { n: 31, cap: 6 }, { n: 32, cap: 6 },
-      { n: 27, cap: 6 }, { n: 28, cap: 6 }, { n: 30, cap: 6 }, { n: 33, cap: 6 }, { n: 34, cap: 6 }
-    ],
-    covered: [
-      { n: 21, cap: 8 }, { n: 22, cap: 12 }, { n: 23, cap: 12 }, { n: 24, cap: 8 },
-      { n: 18, cap: 6 }, { n: 19, cap: 10 }, { n: 20, cap: 6 }
-    ],
-    indoor: [
-      { n: 4, cap: 4 }, { n: 3, cap: 4 }, { n: 2, cap: 4 }, { n: 1, cap: 4 },
-      { n: 7, cap: 6 }, { n: 6, cap: 4 }, { n: 5, cap: 4 },
-      { n: 10, cap: 4 }, { n: 9, cap: 4 }, { n: 8, cap: 2 },
-      { n: 14, cap: 4 }, { n: 13, cap: 4 }, { n: 12, cap: 4 }, { n: 11, cap: 4 },
-      { n: 17, cap: 2 }, { n: 16, cap: 2 }, { n: 15, cap: 2 }
-    ]
+  // בלופרינט מדויק מהדשבורד הקיים - x/y באחוזים, w/h בפיקסלים
+  const tableBlueprint = [
+    { id: 1, seats: 4, zone: "inside", x: 10, y: 80, w: 74, h: 58 },
+    { id: 2, seats: 4, zone: "inside", x: 10, y: 58, w: 74, h: 58 },
+    { id: 3, seats: 4, zone: "inside", x: 10, y: 36, w: 74, h: 58 },
+    { id: 4, seats: 4, zone: "inside", x: 10, y: 14, w: 74, h: 58 },
+    { id: 5, seats: 4, zone: "inside", x: 34, y: 58, w: 74, h: 58 },
+    { id: 6, seats: 4, zone: "inside", x: 34, y: 36, w: 74, h: 58 },
+    { id: 7, seats: 6, zone: "inside", x: 34, y: 15, w: 112, h: 54 },
+    { id: 8, seats: 2, zone: "inside", x: 56, y: 58, w: 58, h: 58 },
+    { id: 9, seats: 4, zone: "inside", x: 56, y: 36, w: 74, h: 58 },
+    { id: 10, seats: 4, zone: "inside", x: 56, y: 14, w: 74, h: 58 },
+    { id: 11, seats: 4, zone: "inside", x: 78, y: 80, w: 74, h: 58 },
+    { id: 12, seats: 4, zone: "inside", x: 78, y: 58, w: 74, h: 58 },
+    { id: 13, seats: 4, zone: "inside", x: 78, y: 36, w: 74, h: 58 },
+    { id: 14, seats: 4, zone: "inside", x: 78, y: 14, w: 74, h: 58 },
+    { id: 15, seats: 2, zone: "inside", x: 94, y: 58, w: 58, h: 58 },
+    { id: 16, seats: 2, zone: "inside", x: 94, y: 36, w: 58, h: 58 },
+    { id: 17, seats: 2, zone: "inside", x: 94, y: 14, w: 58, h: 58 },
+    { id: 18, seats: 6, zone: "covered", x: 11, y: 62, w: 90, h: 70 },
+    { id: 19, seats: 10, zone: "covered", x: 50, y: 63, w: 132, h: 132, round: true },
+    { id: 20, seats: 6, zone: "covered", x: 89, y: 62, w: 90, h: 70 },
+    { id: 21, seats: 8, zone: "covered", x: 13, y: 25, w: 142, h: 62 },
+    { id: 22, seats: 12, zone: "covered", x: 34, y: 25, w: 190, h: 62 },
+    { id: 23, seats: 12, zone: "covered", x: 66, y: 25, w: 190, h: 62 },
+    { id: 24, seats: 8, zone: "covered", x: 87, y: 25, w: 142, h: 62 },
+    { id: 25, seats: 6, zone: "outside", x: 10, y: 28, w: 100, h: 60 },
+    { id: 26, seats: 6, zone: "outside", x: 27, y: 28, w: 100, h: 60 },
+    { id: 27, seats: 6, zone: "outside", x: 10, y: 74, w: 100, h: 60 },
+    { id: 28, seats: 6, zone: "outside", x: 27, y: 74, w: 100, h: 60 },
+    { id: 29, seats: 6, zone: "outside", x: 50, y: 28, w: 100, h: 60 },
+    { id: 30, seats: 6, zone: "outside", x: 50, y: 74, w: 100, h: 60 },
+    { id: 31, seats: 6, zone: "outside", x: 73, y: 28, w: 100, h: 60 },
+    { id: 32, seats: 6, zone: "outside", x: 90, y: 28, w: 100, h: 60 },
+    { id: 33, seats: 6, zone: "outside", x: 73, y: 74, w: 100, h: 60 },
+    { id: 34, seats: 6, zone: "outside", x: 90, y: 74, w: 100, h: 60 },
+  ];
+
+  const ZONE_TO_CONTAINER = {
+    outside: "zone-outdoor",
+    covered: "zone-covered",
+    inside: "zone-indoor"
   };
 
-  function capClass(cap) {
-    if (cap === 10) return "cap-10";
-    if (cap === 12) return "cap-12";
-    if (cap === 8) return "cap-8";
-    if (cap === 6) return "cap-6";
-    if (cap === 4) return "cap-4";
-    return "cap-2";
-  }
-
-  function renderZone(zoneKey, containerId) {
-    const container = document.getElementById(containerId);
-    TABLES[zoneKey].forEach(t => {
-      const btn = document.createElement("button");
-      btn.className = "table-btn " + capClass(t.cap);
-      btn.innerHTML = t.n + `<span class="cap-badge">${t.cap}</span>`;
-      btn.onclick = () => {
-        location.href = "order.html?table=" + t.n;
-      };
-      container.appendChild(btn);
-    });
-  }
-
-  renderZone("outdoor", "zone-outdoor");
-  renderZone("covered", "zone-covered");
-  renderZone("indoor", "zone-indoor");
+  tableBlueprint.forEach(t => {
+    const container = document.getElementById(ZONE_TO_CONTAINER[t.zone]);
+    const btn = document.createElement("button");
+    btn.className = "table-btn free" + (t.round ? " round" : "");
+    btn.style.left = t.x + "%";
+    btn.style.top = t.y + "%";
+    btn.style.setProperty("--w", t.w);
+    btn.style.setProperty("--h", t.h);
+    btn.dataset.number = t.id;
+    btn.title = `שולחן ${t.id}, ${t.seats} מקומות`;
+    btn.textContent = t.seats;
+    btn.onclick = () => { location.href = "order.html?table=" + t.id; };
+    container.appendChild(btn);
+  });
 </script>
 
 </body>
