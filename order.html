@@ -7,17 +7,17 @@
 <title>הזמנה חדשה – YASOU</title>
 <style>
   :root{
-    --navy: #1b3654;
-    --navy-dark: #122540;
-    --gold: #c8a13a;
-    --gold-light: #e4c977;
-    --cream: #f6f2e9;
+    --navy: #163a5c;
+    --navy-dark: #0d2438;
+    --gold: #2f74ab;      /* accent - זהה לצבע הבאנרים הכחולים בתפריט הציבורי */
+    --gold-light: #5a9bcf;
+    --cream: #eef2f6;
     --paper: #ffffff;
-    --ink: #22303f;
-    --muted: #6b7787;
-    --line: #e3ddcd;
+    --ink: #17324f;
+    --muted: #5b6b7a;
+    --line: #d7e2ec;
     --danger: #c0473a;
-    --radius: 14px;
+    --radius: 10px;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -32,7 +32,7 @@
   /* ---------- Top bar ---------- */
   .topbar {
     position: sticky; top: 0; z-index: 20;
-    background: var(--navy);
+    background: linear-gradient(180deg, #4f8fc4 0%, var(--navy-dark) 100%);
     color: #fff;
     padding: 14px 16px;
     display: flex; align-items: center; justify-content: space-between;
@@ -42,7 +42,7 @@
     display: flex; align-items: center; gap: 10px;
   }
   .table-badge .num {
-    background: var(--gold);
+    background: #fff;
     color: var(--navy-dark);
     font-weight: 800;
     font-size: 20px;
@@ -55,6 +55,12 @@
     background: transparent; border: 1px solid rgba(255,255,255,.35);
     color: #fff; border-radius: 10px; padding: 8px 14px;
     font-size: 14px; cursor: pointer;
+  }
+  .sync-indicator {
+    background: #e0a020; color: #fff;
+    font-size: 12px; font-weight: 700;
+    padding: 6px 10px; border-radius: 999px;
+    white-space: nowrap;
   }
 
   /* ---------- Category tabs ---------- */
@@ -79,21 +85,25 @@
     cursor: pointer; white-space: nowrap;
   }
   .tab.active {
-    background: var(--navy);
-    border-color: var(--navy);
+    background: var(--gold);
+    border-color: var(--gold);
     color: #fff;
   }
 
   /* ---------- Item grid ---------- */
   .section-title {
-    padding: 18px 16px 6px;
-    font-size: 18px; font-weight: 800; color: var(--navy);
+    margin: 18px 16px 10px;
+    padding: 10px 16px;
+    font-size: 16px; font-weight: 800; color: #fff;
+    background: var(--gold);
+    border-radius: 8px;
+    text-align: center;
   }
   .grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
-    padding: 8px 16px 10px;
+    padding: 0 16px 10px;
   }
   @media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); } }
   @media (min-width: 960px) { .grid { grid-template-columns: repeat(4, 1fr); } }
@@ -103,20 +113,20 @@
     background: var(--paper);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    padding: 12px;
-    min-height: 96px;
+    padding: 12px 14px;
+    min-height: 76px;
     display: flex; flex-direction: column; justify-content: space-between;
     cursor: pointer;
     transition: transform .08s ease, border-color .12s ease;
     text-align: right;
   }
   .item-card:active { transform: scale(.97); }
-  .item-card.has-qty { border-color: var(--gold); background: #fffdf5; }
-  .item-card .name { font-size: 14.5px; font-weight: 700; line-height: 1.35; }
-  .item-card .price { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .item-card.has-qty { border-color: var(--gold); background: #f3f8fc; }
+  .item-card .name { font-size: 14px; font-weight: 700; line-height: 1.35; color: var(--ink); }
+  .item-card .price { font-size: 14px; font-weight: 700; color: var(--ink); margin-top: 8px; text-align: left; }
   .qty-pill {
     position: absolute; top: -8px; left: -8px;
-    background: var(--gold); color: var(--navy-dark);
+    background: var(--gold); color: #fff;
     font-weight: 800; font-size: 13px;
     min-width: 24px; height: 24px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -138,7 +148,7 @@
   .cart-bar .info { font-size: 14px; }
   .cart-bar .info b { color: var(--gold-light); font-size: 16px; }
   .cart-bar button {
-    background: var(--gold); color: var(--navy-dark);
+    background: var(--gold); color: #fff;
     border: none; border-radius: 10px;
     padding: 12px 22px; font-size: 15px; font-weight: 800;
     cursor: pointer;
@@ -225,7 +235,7 @@
   }
   .send-btn {
     width: 100%; padding: 15px; border: none; border-radius: 12px;
-    background: var(--gold); color: var(--navy-dark);
+    background: var(--gold); color: #fff;
     font-size: 16px; font-weight: 800; cursor: pointer;
   }
   .send-btn:disabled { opacity: .5; }
@@ -250,7 +260,10 @@
       <div class="num" id="tableNum">-</div>
       <div class="label">שולחן</div>
     </div>
-    <button class="back-btn" onclick="location.href='index.html'">חזרה למפה</button>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div class="sync-indicator" id="syncIndicator" style="display:none;"></div>
+      <button class="back-btn" onclick="location.href='index.html'">חזרה למפה</button>
+    </div>
   </div>
 
   <div class="tabs" id="tabs"></div>
@@ -509,23 +522,97 @@
       refreshCardBadges();
     }
 
-    // ---------- Send order (placeholder - wired to Apps Script next step) ----------
-    function sendOrder() {
+    // ---------- Apps Script connection ----------
+    // TODO: להחליף בכתובת ה-Web App האמיתית אחרי ה-Deploy (Code.gs)
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZ9mIH9ce_LH1kyz9uaKiYlreB-WHbdpyKYAMBTx0Yg7pATDVY3hHgwLCcFTWPB5NL/exec";
+    const QUEUE_KEY = "yasou_order_queue";
+
+    function loadQueue() {
+      try {
+        return JSON.parse(localStorage.getItem(QUEUE_KEY)) || [];
+      } catch (e) { return []; }
+    }
+    function saveQueue(queue) {
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+      updateSyncIndicator(queue.length);
+    }
+    function updateSyncIndicator(count) {
+      const el = document.getElementById("syncIndicator");
+      if (count > 0) {
+        el.style.display = "block";
+        el.textContent = `⏳ ${count} ממתינות לסנכרון`;
+      } else {
+        el.style.display = "none";
+      }
+    }
+
+    function generateOrderId(table) {
+      return "ord_" + table + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+    }
+
+    // שליחה לשרת - fetch עם no-cors כי Apps Script Web App לא מחזיר CORS headers,
+    // כך שאי אפשר לקרוא את התשובה, אבל אם ה-fetch לא זרק שגיאה - ההזמנה כנראה יצאה בהצלחה.
+    // ה-idempotency (orderId) בצד ה-Apps Script מגן מפני כפילויות אם בכל זאת ננסה לשלוח שוב.
+    async function trySendOne(order) {
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify(order)
+        });
+        return true;
+      } catch (err) {
+        return false; // אין רשת / השרת לא זמין
+      }
+    }
+
+    async function flushQueue() {
+      let queue = loadQueue();
+      if (queue.length === 0) return;
+      const stillPending = [];
+      for (const order of queue) {
+        const sent = await trySendOne(order);
+        if (!sent) stillPending.push(order);
+      }
+      saveQueue(stillPending);
+      if (stillPending.length === 0) {
+        showToast("כל ההזמנות סונכרנו ✓");
+      }
+    }
+
+    // ניסיון סנכרון: כשחוזר חיבור, וגם כל 15 שניות ליתר ביטחון
+    window.addEventListener("online", flushQueue);
+    setInterval(flushQueue, 15000);
+
+    // ---------- Send order ----------
+    async function sendOrder() {
       if (cart.length === 0) return;
       const order = {
+        orderId: generateOrderId(tableNumber),
         table: tableNumber,
         items: cart,
         total: cartTotal(),
         timestamp: new Date().toISOString()
       };
-      // TODO: כאן יתחבר ה-offline queue + שליחה ל-Apps Script (השלב הבא)
-      console.log("ORDER READY TO SEND:", order);
-      showToast("ההזמנה נשלחה לקופה ✓");
+
+      // תמיד שומרים קודם ל-queue המקומי - כך שההזמנה לא הולכת לאיבוד גם אם הרשת נופלת כרגע
+      const queue = loadQueue();
+      queue.push(order);
+      saveQueue(queue);
+
       cart = [];
       updateCartBar();
       refreshCardBadges();
       closeCartScreen();
+      showToast("ההזמנה נשמרה ונשלחת לקופה...");
+
+      flushQueue();
     }
+
+    // ניסיון סנכרון ראשוני עם טעינת הדף (למקרה שנשארו הזמנות ממתינות מקודם)
+    updateSyncIndicator(loadQueue().length);
+    flushQueue();
 
     // ---------- Toast ----------
     let toastTimer;
@@ -541,4 +628,3 @@
   </script>
 </body>
 </html>
-
