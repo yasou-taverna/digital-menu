@@ -1,1 +1,544 @@
 
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>הזמנה חדשה – YASOU</title>
+<style>
+  :root{
+    --navy: #1b3654;
+    --navy-dark: #122540;
+    --gold: #c8a13a;
+    --gold-light: #e4c977;
+    --cream: #f6f2e9;
+    --paper: #ffffff;
+    --ink: #22303f;
+    --muted: #6b7787;
+    --line: #e3ddcd;
+    --danger: #c0473a;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Segoe UI", Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body { padding-bottom: 96px; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--navy);
+    color: #fff;
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  }
+  .topbar .table-badge {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .table-badge .num {
+    background: var(--gold);
+    color: var(--navy-dark);
+    font-weight: 800;
+    font-size: 20px;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .table-badge .label { font-size: 14px; color: #cfd9e3; }
+  .back-btn {
+    background: transparent; border: 1px solid rgba(255,255,255,.35);
+    color: #fff; border-radius: 10px; padding: 8px 14px;
+    font-size: 14px; cursor: pointer;
+  }
+
+  /* ---------- Category tabs ---------- */
+  .tabs {
+    position: sticky; top: 70px; z-index: 19;
+    display: flex; gap: 8px;
+    overflow-x: auto;
+    padding: 10px 12px;
+    background: var(--cream);
+    border-bottom: 1px solid var(--line);
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 0 0 auto;
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+  }
+  .tab.active {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: #fff;
+  }
+
+  /* ---------- Item grid ---------- */
+  .section-title {
+    padding: 18px 16px 6px;
+    font-size: 18px; font-weight: 800; color: var(--navy);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 8px 16px 10px;
+  }
+  @media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 960px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .item-card {
+    position: relative;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px;
+    min-height: 96px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    cursor: pointer;
+    transition: transform .08s ease, border-color .12s ease;
+    text-align: right;
+  }
+  .item-card:active { transform: scale(.97); }
+  .item-card.has-qty { border-color: var(--gold); background: #fffdf5; }
+  .item-card .name { font-size: 14.5px; font-weight: 700; line-height: 1.35; }
+  .item-card .price { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .qty-pill {
+    position: absolute; top: -8px; left: -8px;
+    background: var(--gold); color: var(--navy-dark);
+    font-weight: 800; font-size: 13px;
+    min-width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,.25);
+  }
+
+  /* ---------- Floating cart bar ---------- */
+  .cart-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+    background: var(--navy-dark);
+    color: #fff;
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 -3px 14px rgba(0,0,0,.25);
+    transform: translateY(110%);
+    transition: transform .18s ease;
+  }
+  .cart-bar.visible { transform: translateY(0); }
+  .cart-bar .info { font-size: 14px; }
+  .cart-bar .info b { color: var(--gold-light); font-size: 16px; }
+  .cart-bar button {
+    background: var(--gold); color: var(--navy-dark);
+    border: none; border-radius: 10px;
+    padding: 12px 22px; font-size: 15px; font-weight: 800;
+    cursor: pointer;
+  }
+
+  /* ---------- Modal (quantity / variant picker) ---------- */
+  .overlay {
+    position: fixed; inset: 0; z-index: 40;
+    background: rgba(18,37,64,.55);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .overlay.open { display: flex; }
+  .sheet {
+    background: var(--paper);
+    width: 100%; max-width: 480px;
+    border-radius: 20px 20px 0 0;
+    padding: 22px 20px 26px;
+  }
+  .sheet h3 { margin: 0 0 4px; font-size: 19px; color: var(--navy); }
+  .sheet .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .variant-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 4px; border-bottom: 1px solid var(--line);
+    font-size: 15px;
+  }
+  .variant-row:last-child { border-bottom: none; }
+  .stepper {
+    display: flex; align-items: center; gap: 14px;
+    justify-content: center; margin: 18px 0 6px;
+  }
+  .stepper button {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--cream);
+    font-size: 22px; font-weight: 700; color: var(--navy);
+    cursor: pointer;
+  }
+  .stepper .count { font-size: 24px; font-weight: 800; min-width: 32px; text-align: center; }
+  .note-field {
+    width: 100%; border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; font-size: 14px; margin-top: 8px;
+    font-family: inherit; resize: none;
+  }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .sheet-actions button {
+    flex: 1; padding: 13px; border-radius: 10px; border: none;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .btn-cancel { background: var(--cream); color: var(--muted); }
+  .btn-add { background: var(--navy); color: #fff; }
+
+  /* ---------- Cart / summary screen ---------- */
+  .cart-screen {
+    position: fixed; inset: 0; z-index: 50;
+    background: var(--cream);
+    display: none; flex-direction: column;
+  }
+  .cart-screen.open { display: flex; }
+  .cart-header {
+    background: var(--navy); color: #fff;
+    padding: 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .cart-header h2 { margin: 0; font-size: 18px; }
+  .cart-list { flex: 1; overflow-y: auto; padding: 14px 16px; }
+  .cart-line {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 10px;
+  }
+  .cart-line .l-name { font-weight: 700; font-size: 14.5px; }
+  .cart-line .l-note { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .cart-line .l-price { font-weight: 700; color: var(--navy); white-space: nowrap; }
+  .cart-line .l-remove {
+    background: none; border: none; color: var(--danger);
+    font-size: 13px; cursor: pointer; padding: 4px 6px;
+  }
+  .cart-footer {
+    padding: 14px 16px 20px; background: var(--paper);
+    border-top: 1px solid var(--line);
+  }
+  .cart-total {
+    display: flex; justify-content: space-between; font-size: 17px;
+    font-weight: 800; color: var(--navy); margin-bottom: 12px;
+  }
+  .send-btn {
+    width: 100%; padding: 15px; border: none; border-radius: 12px;
+    background: var(--gold); color: var(--navy-dark);
+    font-size: 16px; font-weight: 800; cursor: pointer;
+  }
+  .send-btn:disabled { opacity: .5; }
+  .empty-cart { text-align: center; color: var(--muted); padding: 60px 20px; }
+
+  .toast {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    background: var(--navy-dark); color: #fff;
+    padding: 12px 20px; border-radius: 10px; font-size: 14px;
+    z-index: 60; opacity: 0; pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .toast.show { opacity: 1; }
+
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="table-badge">
+      <div class="num" id="tableNum">-</div>
+      <div class="label">שולחן</div>
+    </div>
+    <button class="back-btn" onclick="location.href='index.html'">חזרה למפה</button>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="menuArea"></div>
+
+  <!-- Floating cart bar -->
+  <div class="cart-bar" id="cartBar">
+    <div class="info"><b id="cartCount">0</b> פריטים &nbsp;·&nbsp; <b id="cartTotal">0€</b></div>
+    <button onclick="openCartScreen()">לצפייה בהזמנה</button>
+  </div>
+
+  <!-- Quantity / variant picker -->
+  <div class="overlay" id="overlay">
+    <div class="sheet">
+      <h3 id="sheetTitle"></h3>
+      <div class="sub" id="sheetSub"></div>
+      <div id="variantList"></div>
+      <div class="stepper" id="stepperArea">
+        <button onclick="changeQty(-1)" aria-label="הפחת">−</button>
+        <div class="count" id="qtyCount">1</div>
+        <button onclick="changeQty(1)" aria-label="הוסף">+</button>
+      </div>
+      <textarea class="note-field" id="noteField" rows="2" placeholder="הערה (למשל: בלי בצל, אלרגיה...)"></textarea>
+      <div class="sheet-actions">
+        <button class="btn-cancel" onclick="closeSheet()">ביטול</button>
+        <button class="btn-add" onclick="confirmAdd()">הוסף להזמנה</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cart summary screen -->
+  <div class="cart-screen" id="cartScreen">
+    <div class="cart-header">
+      <button class="back-btn" onclick="closeCartScreen()">← חזרה</button>
+      <h2>סיכום הזמנה - שולחן <span id="cartScreenTable"></span></h2>
+    </div>
+    <div class="cart-list" id="cartLines"></div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>סה"כ לתשלום</span>
+        <span id="cartFooterTotal">0€</span>
+      </div>
+      <button class="send-btn" id="sendBtn" onclick="sendOrder()">שלח לקופה</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/menu-data.js"></script>
+  <script>
+    // ---------- State ----------
+    const params = new URLSearchParams(location.search);
+    const tableNumber = params.get("table") || "?";
+    document.getElementById("tableNum").textContent = tableNumber;
+    document.getElementById("cartScreenTable").textContent = tableNumber;
+
+    let cart = []; // { lineId, itemId, name, unitPrice, qty, note, variantLabel }
+    let activeItem = null;
+    let activeVariantIndex = null;
+    let currentQty = 1;
+
+    // ---------- Render tabs + menu ----------
+    const tabsEl = document.getElementById("tabs");
+    const menuArea = document.getElementById("menuArea");
+
+    function render() {
+      tabsEl.innerHTML = "";
+      menuArea.innerHTML = "";
+      MENU_DATA.categories.forEach((cat, i) => {
+        const tab = document.createElement("button");
+        tab.className = "tab" + (i === 0 ? " active" : "");
+        tab.textContent = cat.name.he;
+        tab.onclick = () => {
+          document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+          document.getElementById("cat-" + cat.id).scrollIntoView({ behavior: "smooth", block: "start" });
+        };
+        tabsEl.appendChild(tab);
+
+        const section = document.createElement("div");
+        section.id = "cat-" + cat.id;
+        section.innerHTML = `<div class="section-title">${cat.name.he}</div>`;
+        const grid = document.createElement("div");
+        grid.className = "grid";
+
+        MENU_DATA.items.filter(it => it.category === cat.id).forEach(item => {
+          const card = document.createElement("div");
+          card.className = "item-card";
+          card.tabIndex = 0;
+          const priceLabel = item.price !== null ? item.price + "€" : formatVariantRange(item.variants);
+          card.innerHTML = `<div class="name">${item.name.he}</div><div class="price">${priceLabel}</div>`;
+          card.onclick = () => openItemSheet(item);
+          grid.appendChild(card);
+        });
+
+        section.appendChild(grid);
+        menuArea.appendChild(section);
+      });
+      refreshCardBadges();
+    }
+
+    function formatVariantRange(variants) {
+      return variants.map(v => v.price + "€").join(" / ");
+    }
+
+    // ---------- Item sheet (quantity + variant + note) ----------
+    function openItemSheet(item) {
+      activeItem = item;
+      activeVariantIndex = null;
+      currentQty = 1;
+      document.getElementById("sheetTitle").textContent = item.name.he;
+      document.getElementById("noteField").value = "";
+      const variantList = document.getElementById("variantList");
+      variantList.innerHTML = "";
+
+      if (item.variants) {
+        document.getElementById("sheetSub").textContent = "בחר אופציה:";
+        item.variants.forEach((v, idx) => {
+          const row = document.createElement("div");
+          row.className = "variant-row";
+          row.innerHTML = `<span>${v.label.he}</span><span>${v.price}€</span>`;
+          row.style.cursor = "pointer";
+          row.onclick = () => {
+            activeVariantIndex = idx;
+            document.querySelectorAll(".variant-row").forEach(r => r.style.background = "");
+            row.style.background = "#f6f2e9";
+          };
+          variantList.appendChild(row);
+        });
+        // ברירת מחדל - האופציה הראשונה
+        activeVariantIndex = 0;
+        variantList.firstChild.style.background = "#f6f2e9";
+      } else {
+        document.getElementById("sheetSub").textContent = item.price + "€ ליחידה";
+      }
+
+      document.getElementById("qtyCount").textContent = currentQty;
+      document.getElementById("overlay").classList.add("open");
+    }
+
+    function changeQty(delta) {
+      currentQty = Math.max(1, currentQty + delta);
+      document.getElementById("qtyCount").textContent = currentQty;
+    }
+
+    function closeSheet() {
+      document.getElementById("overlay").classList.remove("open");
+      activeItem = null;
+    }
+
+    function confirmAdd() {
+      if (!activeItem) return;
+      let unitPrice, variantLabel = null;
+      if (activeItem.variants) {
+        if (activeVariantIndex === null) { showToast("בחר אופציה"); return; }
+        const v = activeItem.variants[activeVariantIndex];
+        unitPrice = v.price;
+        variantLabel = v.label.he;
+      } else {
+        unitPrice = activeItem.price;
+      }
+      const note = document.getElementById("noteField").value.trim();
+
+      cart.push({
+        lineId: Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        itemId: activeItem.id,
+        name: activeItem.name.he,
+        unitPrice,
+        qty: currentQty,
+        note,
+        variantLabel
+      });
+
+      closeSheet();
+      updateCartBar();
+      refreshCardBadges();
+      showToast("נוסף להזמנה");
+    }
+
+    function refreshCardBadges() {
+      document.querySelectorAll(".item-card").forEach(c => {
+        c.classList.remove("has-qty");
+        const badge = c.querySelector(".qty-pill");
+        if (badge) badge.remove();
+      });
+      const qtyByItem = {};
+      cart.forEach(l => { qtyByItem[l.itemId] = (qtyByItem[l.itemId] || 0) + l.qty; });
+      MENU_DATA.items.forEach(item => {
+        if (!qtyByItem[item.id]) return;
+        const cards = document.querySelectorAll(".item-card");
+        cards.forEach(c => {
+          if (c.querySelector(".name").textContent === item.name.he) {
+            c.classList.add("has-qty");
+            const pill = document.createElement("div");
+            pill.className = "qty-pill";
+            pill.textContent = qtyByItem[item.id];
+            c.appendChild(pill);
+          }
+        });
+      });
+    }
+
+    // ---------- Cart bar + total ----------
+    function cartTotal() {
+      return cart.reduce((sum, l) => sum + l.unitPrice * l.qty, 0);
+    }
+    function cartCount() {
+      return cart.reduce((sum, l) => sum + l.qty, 0);
+    }
+    function updateCartBar() {
+      const bar = document.getElementById("cartBar");
+      if (cart.length === 0) { bar.classList.remove("visible"); return; }
+      bar.classList.add("visible");
+      document.getElementById("cartCount").textContent = cartCount();
+      document.getElementById("cartTotal").textContent = cartTotal() + "€";
+    }
+
+    // ---------- Cart screen ----------
+    function openCartScreen() {
+      renderCartLines();
+      document.getElementById("cartScreen").classList.add("open");
+    }
+    function closeCartScreen() {
+      document.getElementById("cartScreen").classList.remove("open");
+    }
+    function renderCartLines() {
+      const list = document.getElementById("cartLines");
+      list.innerHTML = "";
+      if (cart.length === 0) {
+        list.innerHTML = `<div class="empty-cart">עדיין לא נבחרו פריטים</div>`;
+      } else {
+        cart.forEach(line => {
+          const row = document.createElement("div");
+          row.className = "cart-line";
+          const variantText = line.variantLabel ? ` (${line.variantLabel})` : "";
+          const noteText = line.note ? `<div class="l-note">📝 ${line.note}</div>` : "";
+          row.innerHTML = `
+            <div>
+              <div class="l-name">${line.qty}x ${line.name}${variantText}</div>
+              ${noteText}
+            </div>
+            <div style="text-align:left;">
+              <div class="l-price">${line.unitPrice * line.qty}€</div>
+              <button class="l-remove" onclick="removeLine('${line.lineId}')">הסר</button>
+            </div>`;
+          list.appendChild(row);
+        });
+      }
+      document.getElementById("cartFooterTotal").textContent = cartTotal() + "€";
+      document.getElementById("sendBtn").disabled = cart.length === 0;
+    }
+    function removeLine(lineId) {
+      cart = cart.filter(l => l.lineId !== lineId);
+      renderCartLines();
+      updateCartBar();
+      refreshCardBadges();
+    }
+
+    // ---------- Send order (placeholder - wired to Apps Script next step) ----------
+    function sendOrder() {
+      if (cart.length === 0) return;
+      const order = {
+        table: tableNumber,
+        items: cart,
+        total: cartTotal(),
+        timestamp: new Date().toISOString()
+      };
+      // TODO: כאן יתחבר ה-offline queue + שליחה ל-Apps Script (השלב הבא)
+      console.log("ORDER READY TO SEND:", order);
+      showToast("ההזמנה נשלחה לקופה ✓");
+      cart = [];
+      updateCartBar();
+      refreshCardBadges();
+      closeCartScreen();
+    }
+
+    // ---------- Toast ----------
+    let toastTimer;
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+    }
+
+    render();
+  </script>
+</body>
+</html>
+
